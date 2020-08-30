@@ -1,0 +1,2 @@
+model_checkpoint_path: "yolov3_rain_best.tf"
+all_model_checkpoint_paths: "yolov3_rain_best.tf"

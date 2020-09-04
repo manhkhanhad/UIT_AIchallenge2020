@@ -12,7 +12,7 @@ root_path = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
 sys.path.insert(1,root_path)
 
 
-def visualize(list_obj,results_file,track_result,video_in,output,region,movements):
+def visualize(list_obj,list_direction,results_file,track_result,video_in,output,region,movements):
     
     #ROI_PATH = os.path.join(root_path,"Data/{}/{}.txt".format(video_name,video_name))
     #MOI_PATH = os.path.join(root_path,"Data/{}/{}.json".format(video_name,video_name))
@@ -52,7 +52,7 @@ def visualize(list_obj,results_file,track_result,video_in,output,region,movement
     annot = []
     reader = csv.reader(track_file, delimiter=',')
     for row in reader:
-        annot.append([int(row[0]), int(row[1]), float(row[2]), float(row[3]), float(row[4])])
+        annot.append([int(row[0]), int(row[1]), float(row[2]), float(row[3]), float(row[4]), int(row[6])])
     for a in annot:
         print(a)
     annot_index = 0
@@ -105,12 +105,14 @@ def visualize(list_obj,results_file,track_result,video_in,output,region,movement
                 x = int(annot[annot_index][2])
                 y = int(annot[annot_index][3])
                 track_id = list_obj.index(annot[annot_index][1]) + 1   # De in ra theo thu tu obj tang dan
-
+                object_type = int(annot[annot_index][5])        
+                direction = list_direction[track_id-1]
                 color = colors[int(track_id) % len(colors)]
                 color = [i * 255 for i in color]
                 cv2.circle(img,(x,y),10,color,-1)
                 cv2.putText(img,str(track_id),(x,y-10),0,0.75,color,2)
-
+                cv2.putText(img,str(object_type),(x+10,y+10),0,0.5,(0,0,255),2)
+                cv2.putText(img,str(direction),(x-10,y+10),0,0.5,(0,255,255),2)
                 #Trackline
                 if vi_tri_track[track_id-1] == None:
                     vi_tri_track[track_id-1] = [[x,y]]

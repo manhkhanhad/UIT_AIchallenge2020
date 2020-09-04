@@ -20,9 +20,11 @@ from PIL import Image
 import os
 import math
 import json
+import math
+from shapely.geometry import Polygon
 
 flags.DEFINE_string('classes', 'data/labels/obj.names', 'path to classes file')
-flags.DEFINE_string('weights', 'weights/yolov3_rain_best.tf',
+flags.DEFINE_string('weights', 'weights/yolov3_toi.tf',
                     'path to weights file')
 flags.DEFINE_boolean('tiny', False, 'yolov3 or yolov3-tiny')
 flags.DEFINE_integer('size', 416, 'resize images to')
@@ -47,18 +49,52 @@ def load_ROI():
             region = np.array(shape["points"])
     return region
 
-def is_in_ROI(x,y,region):
-    x_max = region.max(0)[0]
-    x_min = region.min(0)[0]
-    y_max = region.max(0)[1]
-    y_min = region.min(0)[1]
-    if (x_min<x<x_max) and ((y_min<y<y_max)):
+"""
+#KIEM TRA OBJECT CO TRONG MOT KHONG
+def DienTichTamGiac(x,y,z):
+    a = math.sqrt((x[0] - y[0])**2 + (x[1] - y[1])**2)
+    b = math.sqrt((y[0] - z[0])**2 + (y[1] - z[1])**2)
+    c = math.sqrt((z[0] - x[0])**2 + (z[1] - x[1])**2)
+    p = (a+b+c)/2
+    return math.sqrt(p*(p-a)*(p-b)*(p-c))
+
+def DienTichDaGiac(region):
+    s = 0
+    region.astype(int)
+    for i in range(-1,region.shape[0]-1):
+        s += (region[i][0] - region[i+1][0])*((region[i][1] + region[i+1][1]))
+    return abs(s/2)
+
+def is_in_region(x,y,region):
+    Tong_tam_giac = 0
+    point = np.array([x,y])
+    for i in range(0,region.shape[0]-1):
+        Tong_tam_giac += DienTichTamGiac(region[i],region[i+1],point)
+
+    Tong_tam_giac += DienTichTamGiac(region[0],region[-1],point)
+
+    epsilon = 10**-6
+    if (Tong_tam_giac - DienTichDaGiac(region)) <= epsilon:
         return True
     else:
         return False
+#-----------------------------------------------
+"""
 
-
-
+def is_in_region(top_left,bot_right,region):
+    x_min = top_left[0]
+    x_max = bot_right[0]
+    y_min = top_left[1]
+    y_max = bot_right[1]
+    bbox = Polygon([(x_min,y_min),(x_min,y_max),(x_max,y_max),(x_max,y_min)])
+    pts = []
+    for point in region:
+        pts.append((point[0],point[1]))
+    roi = Polygon(pts)
+    if bbox.intersects(roi):
+        return True
+    else:
+        return False
 
 def class_to_classNumber(label):
     if label == 'loai_1':
@@ -176,7 +212,7 @@ def main(_argv):
             x_cen = int((int(bbox[2]) + int(bbox[0]))/2)
             y_cen = int((int(bbox[3]) + int(bbox[1]))/2)
 
-            if is_in_ROI(x_cen,y_cen,region) == False:  #NGOAI ROI THI XOA
+            if is_in_region((int(bbox[0]), int(bbox[1])),(int(bbox[2]), int(bbox[3])),region) == False:  #NGOAI ROI THI XOA
                 track.delete_track()
 
             cv2.putText(img,"FRAME: "+ str(frame_index),(0,45),cv2.FONT_HERSHEY_COMPLEX_SMALL,1,(0,255,0),2)
@@ -185,7 +221,7 @@ def main(_argv):
             bb_width = int(bbox[2]) - int(bbox[0])
             bb_height = int(bbox[3]) - int(bbox[1])
             diagonal = math.sqrt(bb_height**2 + bb_width**2)
-            file_out.write("{},{},{},{},{},{},{}\n".format(frame_index,track.track_id,x_cen,y_cen,diagonal,-1.0,class_to_classNumber(str(class_name))))
+            file_out.write("{},{},{},{},{},{},{},{},{}\n".format(frame_index,track.track_id,x_cen,y_cen,diagonal,-1.0,class_to_classNumber(str(class_name)),bb_width,bb_height))
 
         ### UNCOMMENT BELOW IF YOU WANT CONSTANTLY CHANGING YOLO DETECTIONS TO BE SHOWN ON SCREEN
         for det in detections:

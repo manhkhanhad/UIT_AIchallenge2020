@@ -51,7 +51,8 @@ def visualize(list_obj,list_direction,results_file,track_result,video_in,output,
     track_file = open(track_result)
     annot = []
     reader = csv.reader(track_file, delimiter=',')
-    for row in reader:
+    sortedlist = sorted(reader, key=lambda row: int(row[0]), reverse=False)
+    for row in sortedlist:
         annot.append([int(row[0]), int(row[1]), float(row[2]), float(row[3]), float(row[4]), int(row[6])])
     for a in annot:
         print(a)

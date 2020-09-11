@@ -24,8 +24,6 @@ import math
 from shapely.geometry import Polygon
 
 flags.DEFINE_string('classes', 'data/labels/obj.names', 'path to classes file')
-flags.DEFINE_string('weights', 'weights/yolov3_toi.tf',
-                    'path to weights file')
 flags.DEFINE_boolean('tiny', False, 'yolov3 or yolov3-tiny')
 flags.DEFINE_integer('size', 416, 'resize images to')
 flags.DEFINE_string('video', 'data/video/test.mp4',
@@ -41,7 +39,9 @@ def load_ROI():
     video_name = os.path.splitext(FLAGS.video)[-2]
     path = os.getcwd()
     path = str(os.path.split(os.path.split(path)[0])[0])
-    ZONE_PATH = os.path.join(path,"Data/{}/{}.json".format(video_name,video_name))
+    #ZONE_PATH = os.path.join(path,"Data/{}/{}.json".format(video_name,video_name))
+    ZONE_PATH = os.path.join(path,"data/test_data/{}.json".format(video_name))
+    
     with open(ZONE_PATH) as f:
         data = json.load(f)
     for shape in data["shapes"]:
@@ -49,37 +49,6 @@ def load_ROI():
             region = np.array(shape["points"])
     return region
 
-"""
-#KIEM TRA OBJECT CO TRONG MOT KHONG
-def DienTichTamGiac(x,y,z):
-    a = math.sqrt((x[0] - y[0])**2 + (x[1] - y[1])**2)
-    b = math.sqrt((y[0] - z[0])**2 + (y[1] - z[1])**2)
-    c = math.sqrt((z[0] - x[0])**2 + (z[1] - x[1])**2)
-    p = (a+b+c)/2
-    return math.sqrt(p*(p-a)*(p-b)*(p-c))
-
-def DienTichDaGiac(region):
-    s = 0
-    region.astype(int)
-    for i in range(-1,region.shape[0]-1):
-        s += (region[i][0] - region[i+1][0])*((region[i][1] + region[i+1][1]))
-    return abs(s/2)
-
-def is_in_region(x,y,region):
-    Tong_tam_giac = 0
-    point = np.array([x,y])
-    for i in range(0,region.shape[0]-1):
-        Tong_tam_giac += DienTichTamGiac(region[i],region[i+1],point)
-
-    Tong_tam_giac += DienTichTamGiac(region[0],region[-1],point)
-
-    epsilon = 10**-6
-    if (Tong_tam_giac - DienTichDaGiac(region)) <= epsilon:
-        return True
-    else:
-        return False
-#-----------------------------------------------
-"""
 
 def is_in_region(top_left,bot_right,region):
     x_min = top_left[0]
@@ -132,25 +101,28 @@ def main(_argv):
     else:
         yolo = YoloV3(classes=FLAGS.num_classes)
 
-    yolo.load_weights(FLAGS.weights)
+    video_name = os.path.splitext(FLAGS.video)[-2]
+
+    weights = 'weights/yolov3_sang.tf'
+    yolo.load_weights(weights)
     logging.info('weights loaded')
 
     class_names = [c.strip() for c in open(FLAGS.classes).readlines()]
     logging.info('classes loaded')
 
 
-    #CODE WRITE RESULT
-    video_name = os.path.splitext(FLAGS.video)[-2]
+    #WRITE RESULT
+    
     result = "tracking_result/{}_track.txt".format(video_name)
     file_out = open(result,'w')
     path = os.getcwd()
     path = str(os.path.split(os.path.split(path)[0])[0])
-    vid_path = os.path.join(path,"Data/{}/{}.mp4".format(video_name,video_name))
-
+    #vid_path = os.path.join(path,"Data/{}/{}.mp4".format(video_name,video_name))
+    vid_path = os.path.join(path,"data/test_data/{}.mp4".format(video_name))
     vid = cv2.VideoCapture(vid_path)
-
     out = None
 
+    
     if FLAGS.output:
         # by default VideoCapture returns float instead of int
         width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -158,6 +130,7 @@ def main(_argv):
         fps = int(vid.get(cv2.CAP_PROP_FPS))
         codec = cv2.VideoWriter_fourcc(*FLAGS.output_format)
         out = cv2.VideoWriter(FLAGS.output, codec, fps, (width, height))
+    
     frame_index = -1 
     
     fps = 0.0
@@ -198,7 +171,8 @@ def main(_argv):
         tracker.predict()
         tracker.update(detections)
         frame_index = frame_index + 1
-        print('FRAME: ',frame_index)
+        if frame_index % 100 == 0: 
+            print('FRAME: ',frame_index)
         for track in tracker.tracks:
             if not track.is_confirmed() or track.time_since_update > 1:
                 continue 
@@ -235,12 +209,6 @@ def main(_argv):
         cv2.imshow('output', img)
         if FLAGS.output:
             out.write(img)
-            #frame_index = frame_index + 1
-            #list_file.write(str(frame_index)+' '+'\n')
-            #if len(converted_boxes) != 0:
-            #    for i in range(0,len(converted_boxes)):
-            #        list_file.write(str(converted_boxes[i][0]) + ' '+str(converted_boxes[i][1]) + ' '+str(converted_boxes[i][2]) + ' '+str(converted_boxes[i][3]) + ' ')
-            #        list_file.write('\n')
 
         # press q to quit
         if cv2.waitKey(1) == ord('q'):

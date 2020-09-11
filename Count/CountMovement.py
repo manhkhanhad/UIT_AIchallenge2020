@@ -118,7 +118,7 @@ def getTrackItemByTrackId(track_id,path,region):
             #append vi tri va frame vua predict duoc vao
             track_items.append(track_item)
             track_line.append([int(v[0]),float(v[2]),float(v[3]),float(v[7]),float(v[8])])
-            print(track_id,track_item)
+            #print(track_id,track_item)
 
 
     #return track_items
@@ -145,19 +145,19 @@ def getTrackItemByTrackId(track_id,path,region):
         y_botRight = y_cen + height/2
         
         if is_in_region((x_topLeft,y_topLeft),(x_botRight,y_botRight),region) == True and len(track_line) >1:
-            print("CHAY PREDICT")
+            #print("CHAY PREDICT")
             predict_loc = predictROI(last_frame,np.array(track_line),region.astype(int))
             predict_frame, predict_x, predict_y = predict_loc.predictTime()
             if(predict_frame) == None:
                 return track_items
             track_item = TrackItem(predict_frame, class_id, (predict_x, predict_y, diagon, confident))
 
-            #with open(path, "a") as file_object:
-            #    file_object.write("{},{},{},{},{},{},{}\n".format(predict_frame,track_id,predict_x,predict_y,diagon,-1.0,class_id))
+            with open(path, "a") as file_object:
+                file_object.write("{},{},{},{},{},{},{}\n".format(predict_frame,track_id,predict_x,predict_y,diagon,-1.0,class_id))
         
 
             track_items.append(track_item)
-            print(track_id,track_item)
+            #print(track_id,track_item)
             
         return track_items
 
@@ -179,7 +179,8 @@ def get_track(track_items, region ,min_length = 0.3,stride=1, gaussian_std = 0.3
     speed_window = int(speed_window * fps // 2) * 2
     init_frame_id = track_items[0].frame_id
     length = track_items[-1].frame_id - init_frame_id + 1
-    print("frame_id",init_frame_id)
+    if init_frame_id % 100 == 0:
+        print("frame_id",init_frame_id)
     if length < min_length:
         return None
     if len(track_items) == length:
@@ -405,7 +406,7 @@ def get_multi_event(video_id,st_id,en_id,tracking_result_path, region,movement):
 def create_submission(results,result_file,video_name):
     with open(result_file,'w') as f:
         for d in results:
-            print(d)
+            #print(d)
             f.write("{} {} {} {}\n".format(video_name,d.frame_id,d.movement_id,d.obj_type.value))
     print("the result is saved at " + result_file )
 
@@ -415,7 +416,7 @@ def main(_argv):
     TRACKING_RESULT_PATH = os.path.join(root_path,"Tracking/yolov3_deepsort/tracking_result/{}_track.txt".format(video_name))
     #ROI_PATH = os.path.join(root_path,"Data/{}/{}.txt".format(video_name,video_name))
     #MOI_PATH = os.path.join(root_path,"Data/{}/{}.json".format(video_name,video_name))
-    ZONE_PATH = os.path.join(root_path,"Data/{}/{}.json".format(video_name,video_name))
+    ZONE_PATH = os.path.join(root_path,"data/test_data/{}.json".format(video_name))
     with open(TRACKING_RESULT_PATH, "rb") as file:
         file.seek(-2, os.SEEK_END)
         while file.read(1) != b'\n':
@@ -438,10 +439,6 @@ def main(_argv):
             movement[ int(shape["label"][-2:]) ] = np.array(shape["points"]) 
 
     results = get_multi_event(video_id,trackid_st,trackid_en,TRACKING_RESULT_PATH,region,movement)
-    for i in results:
-        print(i)
-    for track in results[0]:
-        print(track)
     results_path = os.path.join(root_path,'Result/{}_result.txt'.format(video_name))
     create_submission(results,results_path,video_name)
 

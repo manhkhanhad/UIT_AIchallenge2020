@@ -23,7 +23,7 @@ python run.py --video=<video_name.mp4> --visualize=True
 Your result saved in Result folder
 
 # Example
-![Imgur](https://imgur.com/l9Oj8XG)
+![Imgur](Visualize/cam_14_visualize.00_00_20_23.Still001.jpg)
 # The related repos
 [DeepSORT](https://github.com/theAIGuysCode/yolov3_deepsort)  
 [YOLOv3](https://arxiv.org/abs/1804.02767)  

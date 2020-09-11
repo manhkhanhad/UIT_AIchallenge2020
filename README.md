@@ -1,4 +1,5 @@
 # Multi-Class Multi-Movement Vehicle Counting
+Ho Chi Minh AI challenge 2020
 # Quick Start
 0. Install libraries 
 ```
